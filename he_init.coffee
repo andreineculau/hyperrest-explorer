@@ -1,2 +1,2 @@
-router = new HE.Router({entryPoint: 'http://klarna.apiary.io/'})
+new HE({entryPoint: 'http://klarna.apiary.io/'})
 Backbone.history.start()

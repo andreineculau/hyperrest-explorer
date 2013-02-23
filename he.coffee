@@ -1,39 +1,8 @@
 (->
-  HE =
-    Models: {}
-    Views: {}
-    currentDocument: {}
-    jsonIndent: 2
+  window.HE = HE = class HE extends Backbone.Router
+    constructor: (args...) ->
+      HE.__super__.constructor.apply @, args # Redux FIXME
 
-  HE.client = (opts) ->
-    @vent = opts.vent
-    @headers = HE.parseHeaders($("#req-headers").val())
-    @get = (url) ->
-      self = this
-      @vent.trigger "location-change",
-        url: url
-
-      jqxhr = $.ajax(
-        url: url
-        dataType: "json"
-        headers: @headers
-        success: (resource, textStatus, jqXHR) ->
-          self.vent.trigger "response",
-            resource: resource
-            headers: jqXHR.getAllResponseHeaders()
-
-      ).error(->
-        self.vent.trigger "fail-response",
-          jqxhr: jqxhr
-
-      ).always(->
-        self.vent.trigger "response-headers",
-          jqxhr: jqxhr
-
-      )
-    @
-
-  HE.Router = Backbone.Router.extend(
     initialize: (opts) ->
       self = this
       opts = opts or {}
@@ -41,7 +10,7 @@
       vent.bind "response", (e) ->
         window.HE.currentDocument = e.resource or {}
 
-      @client = new HE.client({vent: vent})
+      @client = new HE.Client({vent: vent})
       $.ajaxSetup headers:
         Accept: "application/hal+json, application/json, */*; q=0.01"
 
@@ -62,8 +31,40 @@
 
     resourceRoute: (url) ->
       url = location.hash.slice(1)
-      @client.get url  if url.slice(0, 8) isnt "NON-GET:"
-  )
+      @client.ajax {url: url}  if url.slice(0, 8) isnt "NON-GET:"
+
+  HE.Models = {}
+  HE.Views = {}
+  HE.util = {}
+  HE.currentDocument = {}
+  HE.jsonIndent = 2
+
+  HE.Client = class HEClient
+    constructor: (opts) ->
+      @vent = opts.vent
+      @$headers = $("#req-headers")
+
+    ajax: (opts) ->
+      opts = {url: opts}  if typeof opts isnt 'object' # FIXME
+      self = @
+      @vent.trigger "req-address-change",
+        url: opts.url
+
+      opts.dataType = 'json'
+      opts.headers = HE.util.parseHeaders @$headers.val()
+
+      jqxhr = $.ajax(opts).done((resource, textStatus, jqXHR) ->
+        self.vent.trigger "response",
+          resource: resource
+          headers: jqXHR.getAllResponseHeaders()
+      ).error(->
+        self.vent.trigger "fail-response",
+          jqxhr: jqxhr
+      ).always(->
+        self.vent.trigger "response-headers",
+          jqxhr: jqxhr
+      )
+
   HE.Models.Resource = Backbone.Model.extend(
     initialize: (representation) ->
       @links = representation._links
@@ -108,13 +109,6 @@
         el: $("#res-resource")
         vent: @vent
       )
-
-    events:
-      "blur #req-headers": "updateRequestHeaders"
-
-    updateRequestHeaders: (e) ->
-      headers = HE.parseHeaders(@$("#req-headers").val())
-      $.ajaxSetup headers: headers
   )
   HE.Views.Resource = Backbone.View.extend(
     initialize: (opts) ->
@@ -216,7 +210,7 @@
     initialize: (opts) ->
       self = this
       @vent = opts.vent
-      @vent.bind "location-change", (e) ->
+      @vent.bind "req-address-change", (e) ->
         self.setLocation e.url
 
 
@@ -314,7 +308,7 @@
       "submit form": "submitQuery"
 
     headers: ->
-      HE.parseHeaders @$(".headers").val()
+      HE.util.parseHeaders @$(".headers").val()
 
     submitQuery: (e) ->
       e.preventDefault()
@@ -340,7 +334,7 @@
         self.vent.trigger "response-headers",
           jqxhr: jqxhr
 
-        self.vent.trigger "location-change",
+        self.vent.trigger "req-address-change",
           url: self.href
 
         window.location.hash = "NON-GET:" + self.href
@@ -388,7 +382,7 @@
     else
       rel
 
-  HE.parseHeaders = (string) ->
+  HE.util.parseHeaders = (string) ->
     header_lines = string.split("\n")
     headers = {}
     _.each header_lines, (line) ->
@@ -399,6 +393,4 @@
         headers[name] = value
 
     headers
-
-  window.HE = HE
 )()
