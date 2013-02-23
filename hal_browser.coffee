@@ -7,7 +7,7 @@
 
   HAL.client = (opts) ->
     @vent = opts.vent
-    @headers = HAL.parseHeaders($("#request-headers").val())
+    @headers = HAL.parseHeaders($("#req-headers").val())
     @get = (url) ->
       self = this
       @vent.trigger "location-change",
@@ -46,11 +46,11 @@
         Accept: "application/hal+json, application/json, */*; q=0.01"
 
       @browser = new HAL.Views.Browser(
-        el: $("#browser")
+        el: $("#req")
         vent: vent
       )
       @inspectorView = new HAL.Views.Inspector(
-        el: $("#inspector")
+        el: $("#res")
         vent: vent
       )
       if window.location.hash is ""
@@ -101,19 +101,19 @@
       self = this
       @vent = opts.vent
       @locationBar = new HAL.Views.LocationBar(
-        el: @$("#location-bar")
+        el: @$("#res-address-bar")
         vent: @vent
       )
       @resourceView = new HAL.Views.Resource(
-        el: @$("#current-resource")
+        el: $("#res-resource")
         vent: @vent
       )
 
     events:
-      "blur #request-headers": "updateRequestHeaders"
+      "blur #req-headers": "updateRequestHeaders"
 
     updateRequestHeaders: (e) ->
-      headers = HAL.parseHeaders(@$("#request-headers").val())
+      headers = HAL.parseHeaders(@$("#req-headers").val())
       $.ajaxSetup headers: headers
   )
   HAL.Views.Resource = Backbone.View.extend(
@@ -221,9 +221,9 @@
 
 
     setLocation: (url) ->
-      @address.html url
+      @address.attr 'value', url
 
-    address: $(".address")
+    address: $("#req-address")
   )
   HAL.Views.Inspector = Backbone.View.extend(
     initialize: (opts) ->
@@ -235,12 +235,11 @@
       @vent.bind "response", @showRawResource
       @vent.bind "response-headers", @showResponseHeaders
 
-    responseHeadersTemplate: _.template($("#response-headers-template").html())
     showResponseHeaders: (e) ->
-      @$(".header-panel").html @responseHeadersTemplate(jqxhr: e.jqxhr)
+      @$("#res-headers").html e.jqxhr.status + ' ' + e.jqxhr.statusText + '\n' + e.jqxhr.getAllResponseHeaders()
 
     showDocs: (e) ->
-      @$(".body-panel").html "<iframe src=" + e.url + "></iframe>"
+      @$("#res-body").html "<iframe src=" + e.url + "></iframe>"
 
     showRawResource: (e) ->
       output = "n/a"
@@ -263,7 +262,7 @@
             # JSON parse failed. Just show the raw text.
             output = responseText
         else output = responseText  if content_type.indexOf("text/") is 0
-      @$(".body-panel").html "<pre>" + _.escape(output) + "</pre>"
+      @$("#res-body").html _.escape(output)
   )
   HAL.Views.QueryUriDialog = Backbone.View.extend(
     initialize: (opts) ->
@@ -351,7 +350,7 @@
     render: ->
       @$el.html @template(
         href: @href
-        user_defined_headers: $("#request-headers").val()
+        user_defined_headers: $("#req-headers").val()
       )
       this
 

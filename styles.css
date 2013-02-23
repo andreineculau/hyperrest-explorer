@@ -1,39 +1,80 @@
-#browser #location-bar { margin: 10px 0; }
-
-#browser #location-bar .address {
-  border: 1px solid #999;
-  padding: 4px; margin: 0;
+/* OVERVIEW */
+body {
+  cursor: default;
+  overflow-y: scroll;
+  padding-top: 30px;
 }
 
-#browser #headers-bar {
- border: 1px solid #888;
- padding: 5px
+h1 {
+  font-size: 18px;
 }
 
-#request-headers {
-  border: 0;
-  outline: none;
-  padding: 0;
-  resize: vertical;
-  width: 100%;
-  height: 40px;
+h2 {
+  font-size: 14px;
+}
+
+pre,
+.pre {
+  font-family: Monaco,Menlo,Consolas,"Courier New",monospace;
+  color: #333;
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.pre-scrollable {
+  height: 340px;
+}
+
+.pre-scrollable-small {
+  height: 100px;
+  overflow-y: scroll;
+}
+
+/* ? */
+#row {
+  width: 150%;
+  padding: 0px 20px;
+}
+
+#req-address-bar {
+  float: none;
+}
+
+#req-address-bar > li:first-of-type {
+  width: 80%;
+}
+
+#req-address-bar > li form {
+  float: none;
+}
+
+#req-address {
+  width: 65%;
+}
+
+#req-headers-bar,
+#req-body-bar {
+  text-align: center;
+}
+#req-headers,
+#req-body {
+  width: 95%;
   margin-bottom: 0px;
-
-  -webkit-box-shadow: none;
-  -moz-box-shadow: none;
-  box-shadow: none;
+  padding: 9.5px;
 }
 
 #inspector { height: 100%; }
 
 #inspector .body-panel iframe { width: 100%; height: 100%; }
 
-body .btn {
+
+table.table {
+  font-size: 11px;
+}
+
+table .btn {
   padding: 2px 5px 2px;
   font-size: 12px;
   line-height: 14px;
 }
 
-body table.table {
-  font-size: 11px;
-}
