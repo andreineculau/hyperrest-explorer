@@ -1,11 +1,10 @@
-HAL-browser
-===========
+# Hypermedia Explorer
 
-An API browser for the hal+json media type
+A Hypermedia Explorer for Hypermedia APIs.
+
+This is an abstract fork of [HAL Browser](https://github.com/mikekelly/hal-browser).
 
 
-TODO
-===========
-* Handle errors, present something useful to user (see issue #8)
-* Make Location and Content-Location headers clickable links
-* Improve GUI
+# License
+
+[MIT](MIT-LICENSE.txt)
