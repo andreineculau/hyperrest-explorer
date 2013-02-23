@@ -23,11 +23,13 @@ pre,
 
 .pre-scrollable {
   height: 340px;
+  box-sizing: border-box;
 }
 
 .pre-scrollable-small {
   height: 100px;
   overflow-y: scroll;
+  box-sizing: border-box;
 }
 
 /* ? */
@@ -44,21 +46,21 @@ pre,
   width: 80%;
 }
 
-#req-address-bar > li form {
+#req-address-bar > li > form {
   float: none;
 }
+
+#req-address-bar > li > form > .btn-group > button:not(.active):not(:hover) {
+  opacity: 0.5;
+}
+
 
 #req-address {
   width: 65%;
 }
 
-#req-headers-bar,
-#req-body-bar {
-  text-align: center;
-}
 #req-headers,
 #req-body {
-  width: 95%;
   margin-bottom: 0px;
   padding: 9.5px;
 }
@@ -78,3 +80,13 @@ table .btn {
   line-height: 14px;
 }
 
+div.btn-group[data-toggle=buttons-radio] input[type=radio] {
+  display:    block;
+  position:   absolute;
+  top:        0;
+  left:       0;
+  width:      100%;
+  height:     100%;
+  opacity:    hidden;
+  visibility: hidden;
+}

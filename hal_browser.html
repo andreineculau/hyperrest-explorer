@@ -1,13 +1,11 @@
 <!doctype html>
   <head>
     <meta charset="utf-8">
-    <title>The HE Browser</title>
+    <title>Hypermedia Explorer</title>
     <link rel="stylesheet" media="screen" href="//ajax.aspnetcdn.com/ajax/jquery.ui/1.8.19/themes/base/jquery-ui.css" />
     <link rel="stylesheet" media="screen" href="//ajax.aspnetcdn.com/ajax/jquery.ui/1.8.19/themes/ui-lightness/jquery-ui.css" />
     <link rel="stylesheet" media="screen" href="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.3.0/css/bootstrap.min.css" />
     <link rel="stylesheet" media="screen" href="styles.css" />
-    <style type="text/css">
-    </style>
   </head>
   <body>
 
@@ -19,17 +17,17 @@
             <ul class="nav" id="req-address-bar">
               <li>
                 <form class="navbar-form pull-left">
-                  <div class="btn-group">
+                  <div class="btn-group" data-toggle="buttons-radio">
                     <button class="btn btn-info"><abbr title="OPTIONS">O</abbr></button>
                     <button class="btn btn-info"><abbr title="HEAD">H</abbr></button>
-                    <button class="btn btn-success"><abbr title="GET">G</abbr></button>
+                    <button class="btn btn-success active"><abbr title="GET">G</abbr></button>
                     <button class="btn btn-danger"><abbr title="POST">PO</abbr></button>
                     <button class="btn btn-danger"><abbr title="PATCH">PA</abbr></button>
                     <button class="btn btn-warning"><abbr title="PUT">PU</abbr></button>
                     <button class="btn btn-warning"><abbr title="DELETE">D</abbr></button>
                     <button class="btn btn-info"><abbr title="TRACE">T</abbr></button>
                   </div>
-                  <input type="text" id="req-address"></input>
+                  <input type="text" id="req-address" class="input-block-level"></input>
                   <button id="req-refresh" class="btn btn-inverse">⟳</button>
                 </form>
               </li>
@@ -52,11 +50,11 @@
             <h1>Request</h1>
             <h2>Headers</h2>
             <div id="req-headers-bar">
-              <textarea id="req-headers" class="pre pre-scrollable-small"></textarea>
+              <textarea id="req-headers" class="input-block-level pre pre-scrollable-small"></textarea>
             </div>
             <h2>Body</h2>
             <div id="req-body-bar">
-              <textarea id="req-body" class="pre pre-scrollable"></textarea>
+              <textarea id="req-body" class="input-block-level pre pre-scrollable"></textarea>
             </div>
           </div>
         </div>
