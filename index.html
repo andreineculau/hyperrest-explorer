@@ -121,10 +121,6 @@
     </script>
 
     <script id="resource-template" type="text/template">
-      <div class="state">
-        <h2>Properties</h2>
-        <pre><%= _.escape(JSON.stringify(state, null, HE.jsonIndent)) %></pre>
-      </div>
       <div class="links">
         <h2>Links</h2>
           <table class="table">
@@ -188,6 +184,10 @@
             <% }) %>
             </tbody>
           </table>
+      </div>
+      <div class="state">
+        <h2>State</h2>
+        <pre><%= _.escape(JSON.stringify(state, null, HE.jsonIndent)) %></pre>
       </div>
       <h2>Embedded Resources</h2>
       <div class="embedded-resources"></div>
