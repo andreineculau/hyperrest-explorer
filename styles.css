@@ -1,4 +1,4 @@
-/* OVERVIEW */
+/* GENERAL */
 body {
   cursor: default;
   overflow-y: scroll;
@@ -32,12 +32,24 @@ pre,
   box-sizing: border-box;
 }
 
-/* ? */
-#row {
+div.btn-group[data-toggle=buttons-radio] input[type=radio] {
+  display:    block;
+  position:   absolute;
+  top:        0;
+  left:       0;
+  width:      100%;
+  height:     100%;
+  opacity:    hidden;
+  visibility: hidden;
+}
+
+#main {
   width: 150%;
   padding: 0px 20px;
 }
 
+
+/* ADDRESS BAR */
 #req-address-bar {
   float: none;
 }
@@ -54,22 +66,20 @@ pre,
   opacity: 0.5;
 }
 
-
 #req-address {
   width: 65%;
 }
 
+
+/* REQUEST */
 #req-headers,
 #req-body {
   margin-bottom: 0px;
   padding: 9.5px;
 }
 
-#inspector { height: 100%; }
 
-#inspector .body-panel iframe { width: 100%; height: 100%; }
-
-
+/* LINKS */
 table.table {
   font-size: 11px;
 }
@@ -78,15 +88,4 @@ table .btn {
   padding: 2px 5px 2px;
   font-size: 12px;
   line-height: 14px;
-}
-
-div.btn-group[data-toggle=buttons-radio] input[type=radio] {
-  display:    block;
-  position:   absolute;
-  top:        0;
-  left:       0;
-  width:      100%;
-  height:     100%;
-  opacity:    hidden;
-  visibility: hidden;
 }
