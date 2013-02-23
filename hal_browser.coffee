@@ -1,13 +1,13 @@
 (->
-  HAL =
+  HE =
     Models: {}
     Views: {}
     currentDocument: {}
     jsonIndent: 2
 
-  HAL.client = (opts) ->
+  HE.client = (opts) ->
     @vent = opts.vent
-    @headers = HAL.parseHeaders($("#req-headers").val())
+    @headers = HE.parseHeaders($("#req-headers").val())
     @get = (url) ->
       self = this
       @vent.trigger "location-change",
@@ -33,23 +33,23 @@
       )
     @
 
-  HAL.Router = Backbone.Router.extend(
+  HE.Router = Backbone.Router.extend(
     initialize: (opts) ->
       self = this
       opts = opts or {}
       vent = _.extend({}, Backbone.Events)
       vent.bind "response", (e) ->
-        window.HAL.currentDocument = e.resource or {}
+        window.HE.currentDocument = e.resource or {}
 
-      @client = new HAL.client({vent: vent})
+      @client = new HE.client({vent: vent})
       $.ajaxSetup headers:
         Accept: "application/hal+json, application/json, */*; q=0.01"
 
-      @browser = new HAL.Views.Browser(
+      @browser = new HE.Views.Browser(
         el: $("#req")
         vent: vent
       )
-      @inspectorView = new HAL.Views.Inspector(
+      @inspectorView = new HE.Views.Inspector(
         el: $("#res")
         vent: vent
       )
@@ -64,7 +64,7 @@
       url = location.hash.slice(1)
       @client.get url  if url.slice(0, 8) isnt "NON-GET:"
   )
-  HAL.Models.Resource = Backbone.Model.extend(
+  HE.Models.Resource = Backbone.Model.extend(
     initialize: (representation) ->
       @links = representation._links
       @embeddedResources = @buildEmbeddedResources(representation._embedded)  if representation._embedded isnt `undefined`
@@ -82,29 +82,29 @@
         if $.isArray(obj)
           arr = []
           _.each obj, (resource, i) ->
-            newResource = new HAL.Models.Resource(resource)
+            newResource = new HE.Models.Resource(resource)
             newResource.identifier = rel + "[" + i + "]"
             newResource.embed_rel = rel
             arr.push newResource
 
           result[rel] = arr
         else
-          newResource = new HAL.Models.Resource(obj)
+          newResource = new HE.Models.Resource(obj)
           newResource.identifier = rel
           newResource.embed_rel = rel
           result[rel] = newResource
 
       result
   )
-  HAL.Views.Browser = Backbone.View.extend(
+  HE.Views.Browser = Backbone.View.extend(
     initialize: (opts) ->
       self = this
       @vent = opts.vent
-      @locationBar = new HAL.Views.LocationBar(
+      @locationBar = new HE.Views.LocationBar(
         el: @$("#res-address-bar")
         vent: @vent
       )
-      @resourceView = new HAL.Views.Resource(
+      @resourceView = new HE.Views.Resource(
         el: $("#res-resource")
         vent: @vent
       )
@@ -113,10 +113,10 @@
       "blur #req-headers": "updateRequestHeaders"
 
     updateRequestHeaders: (e) ->
-      headers = HAL.parseHeaders(@$("#req-headers").val())
+      headers = HE.parseHeaders(@$("#req-headers").val())
       $.ajaxSetup headers: headers
   )
-  HAL.Views.Resource = Backbone.View.extend(
+  HE.Views.Resource = Backbone.View.extend(
     initialize: (opts) ->
       self = this
       @vent = opts.vent
@@ -125,7 +125,7 @@
       _.bindAll this, "showUriQueryDialog"
       _.bindAll this, "showDocs"
       @vent.bind "response", (e) ->
-        self.render new HAL.Models.Resource(e.resource)
+        self.render new HE.Models.Resource(e.resource)
 
       @vent.bind "fail-response", (e) ->
         self.vent.trigger "response",
@@ -160,7 +160,7 @@
       e.preventDefault()
       $target = $(e.target)
       uri = $target.attr("href") or $target.parent().attr("href")
-      d = new HAL.Views.QueryUriDialog(href: uri).render()
+      d = new HE.Views.QueryUriDialog(href: uri).render()
       d.$el.dialog
         title: "Query URI Template"
         width: 400
@@ -169,7 +169,7 @@
 
     showNonSafeRequestDialog: (e) ->
       e.preventDefault()
-      d = new HAL.Views.NonSafeRequestDialog(
+      d = new HE.Views.NonSafeRequestDialog(
         href: $(e.target).attr("href")
         vent: @vent
       ).render()
@@ -212,7 +212,7 @@
     template: _.template($("#resource-template").html())
     embeddedResourceTemplate: _.template($("#embedded-resource-template").html())
   )
-  HAL.Views.LocationBar = Backbone.View.extend(
+  HE.Views.LocationBar = Backbone.View.extend(
     initialize: (opts) ->
       self = this
       @vent = opts.vent
@@ -225,7 +225,7 @@
 
     address: $("#req-address")
   )
-  HAL.Views.Inspector = Backbone.View.extend(
+  HE.Views.Inspector = Backbone.View.extend(
     initialize: (opts) ->
       @vent = opts.vent
       _.bindAll this, "showDocs"
@@ -244,7 +244,7 @@
     showRawResource: (e) ->
       output = "n/a"
       if e.resource isnt null
-        output = JSON.stringify(e.resource, null, HAL.jsonIndent)
+        output = JSON.stringify(e.resource, null, HE.jsonIndent)
       else
 
         # The Ajax request "failed", but there may still be an
@@ -256,7 +256,7 @@
           # Looks like json... try to parse it.
           try
             obj = JSON.parse(responseText)
-            output = JSON.stringify(obj, null, HAL.jsonIndent)
+            output = JSON.stringify(obj, null, HE.jsonIndent)
           catch err
 
             # JSON parse failed. Just show the raw text.
@@ -264,7 +264,7 @@
         else output = responseText  if content_type.indexOf("text/") is 0
       @$("#res-body").html _.escape(output)
   )
-  HAL.Views.QueryUriDialog = Backbone.View.extend(
+  HE.Views.QueryUriDialog = Backbone.View.extend(
     initialize: (opts) ->
       @href = opts.href
       @uriTemplate = uritemplate(@href)
@@ -303,7 +303,7 @@
 
     template: _.template($("#query-uri-template").html())
   )
-  HAL.Views.NonSafeRequestDialog = Backbone.View.extend(
+  HE.Views.NonSafeRequestDialog = Backbone.View.extend(
     initialize: (opts) ->
       @href = opts.href
       @vent = opts.vent
@@ -314,7 +314,7 @@
       "submit form": "submitQuery"
 
     headers: ->
-      HAL.parseHeaders @$(".headers").val()
+      HE.parseHeaders @$(".headers").val()
 
     submitQuery: (e) ->
       e.preventDefault()
@@ -357,20 +357,20 @@
     template: _.template($("#non-safe-request-template").html())
   )
   urlRegex = /(http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/
-  HAL.isUrl = (str) ->
+  HE.isUrl = (str) ->
     str.match(urlRegex) or isCurie(str)
 
-  HAL.truncateIfUrl = (str) ->
+  HE.truncateIfUrl = (str) ->
     replaceRegex = /(http|https):\/\/([^\/]*)\//
     str.replace replaceRegex, ".../"
 
   isCurie = (string) ->
     string.split(":").length > 1
 
-  HAL.buildUrl = (rel) ->
-    if not rel.match(urlRegex) and isCurie(rel) and HAL.currentDocument._links.curies
+  HE.buildUrl = (rel) ->
+    if not rel.match(urlRegex) and isCurie(rel) and HE.currentDocument._links.curies
       parts = rel.split(":")
-      curies = HAL.currentDocument._links.curies
+      curies = HE.currentDocument._links.curies
       i = 0
 
       while i < curies.length
@@ -380,15 +380,15 @@
         i++
 
     # Backward compatible with <04 version of spec.
-    else if not rel.match(urlRegex) and isCurie(rel) and HAL.currentDocument._links.curie
-      tmpl = uritemplate(HAL.currentDocument._links.curie.href)
+    else if not rel.match(urlRegex) and isCurie(rel) and HE.currentDocument._links.curie
+      tmpl = uritemplate(HE.currentDocument._links.curie.href)
       tmpl.expand rel: rel.split(":")[1]
 
     # End BC.
     else
       rel
 
-  HAL.parseHeaders = (string) ->
+  HE.parseHeaders = (string) ->
     header_lines = string.split("\n")
     headers = {}
     _.each header_lines, (line) ->
@@ -400,5 +400,5 @@
 
     headers
 
-  window.HAL = HAL
+  window.HE = HE
 )()
