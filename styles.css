@@ -1,7 +1,6 @@
 /* GENERAL */
 body {
   cursor: default;
-  overflow-y: scroll;
   padding-top: 30px;
 }
 
@@ -21,12 +20,13 @@ pre,
   line-height: 16px;
 }
 
-.pre-scrollable {
-  height: 340px;
+.scrollable {
+  height: 440px;
+  overflow-y: scroll;
   box-sizing: border-box;
 }
 
-.pre-scrollable-small {
+.scrollable-small {
   height: 100px;
   overflow-y: scroll;
   box-sizing: border-box;
@@ -54,7 +54,7 @@ div.btn-group[data-toggle=buttons-radio] input[type=radio] {
   float: none;
 }
 
-#req-address-bar > li:first-of-type {
+#req-address-bar > li {
   width: 80%;
 }
 
@@ -62,14 +62,15 @@ div.btn-group[data-toggle=buttons-radio] input[type=radio] {
   float: none;
 }
 
-#req-address-bar > li > form > .btn-group > button:not(.active):not(:hover) {
-  opacity: 0.5;
+#req-address-bar > li > form > .btn-group > button.active {
+  background-color: #000;
+  cursor: default;
 }
 
 #req-address {
-  width: 65%;
+  font-size: 12px;
+  width: 60%;
 }
-
 
 /* REQUEST */
 #req-headers,

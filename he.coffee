@@ -3,12 +3,13 @@
     constructor: (args...) ->
       HE.__super__.constructor.apply @, args # Redux FIXME
 
-    initialize: (opts = {}) ->
+    initialize: (@opts = {}) ->
+      delete window.HE
       self = this
       @event = _.extend {}, Backbone.Events
-      @event.bind 'res', (e) ->
-        HE.currentDocument = e.resource or {}
 
+      @$reqMethod = $ '#req-method'
+      @$reqAddressBar = $ '#req-address-bar > li:eq(0)'
       @$reqAddress = $ '#req-address'
       @$req = $ '#req'
       @$reqHeaders = $ '#req-headers'
@@ -18,6 +19,12 @@
       @$resBody = $ '#res-body'
       @$resource = $ '#resource'
 
+      @callbacks = _.assign {}, HE.callbacks, @opts.callbacks
+
+      @addressBar = new HE.Views.AddressBar(
+        el: @$reqAddressBar
+        HE: @
+      )
       @resource = new HE.Views.Resource(
         el: @$resource
         HE: @
@@ -30,8 +37,33 @@
         el: @$res
         HE: @
       )
+      $('button', @$reqMethod).click (e) -> self.ajax {type: $(this).attr('title')}
+      $('#req-refresh').click (e) -> self.ajax()
+      window.location.hash = @opts.entryPoint  if @opts.entryPoint and window.location.hash is ''
+      Backbone.history.start()
 
-      window.location.hash = opts.entryPoint  if opts.entryPoint and window.location.hash is ''
+    @callbacks =
+      parseResHeaders: (res) ->
+        res.status + ' ' + res.statusText + '\n' + res.jqXHR.getAllResponseHeaders()
+      parseResLinks: (res) ->
+        []
+      parseResBodyState: (res) ->
+        if res.body
+          JSON.parse res.body
+        else
+          res.headers
+      prettifyResBody: (res) ->
+        type = 'json'  if /json$/.test(res.headers?['content-type'])
+        @prettifyBody type, res.body
+      prettifyBody: (type, body) ->
+        prettyBody = body
+        switch type
+          when 'json'
+            try
+              prettyBody = JSON.stringify JSON.parse(body), undefined, 2
+            catch e
+              prettyBody
+        prettyBody
 
     routes:
       '*url': 'getResource'
@@ -40,32 +72,39 @@
       hash = location.hash.slice 1
       @ajax {url: url}  if hash.slice(0, 8) isnt 'NON-GET:'
 
-    ajax: (opts) ->
-      opts = {url: opts}  if typeof opts isnt 'object' # FIXME
+    ajax: (opts = {}) ->
       self = @
-      @HE.event.trigger 'req-address-change',
-        url: opts.url
+      @$reqAddressBar.hide()
+      if opts.url
+        @event.trigger 'req-address-change',
+          HE: self
+          url: opts.url
+      else
+        opts.url = @$reqAddress.val()
 
-      opts.dataType = 'json'
-      opts.headers = HE.util.parseHeaders @HE.$reqHeaders.val()
+      unless opts.type
+        opts.type = $('button.active', @$reqMethod).attr('title')
 
-      jqxhr = $.ajax(opts).done((resource, textStatus, jqXHR) ->
-        self.HE.event.trigger 'res',
-          resource: resource
-          headers: jqXHR.getAllResponseHeaders()
-      ).fail(->
-        self.HE.event.trigger 'res-fail',
-          jqxhr: jqxhr
-      ).always(->
-        self.HE.event.trigger 'res-headers',
-          jqxhr: jqxhr
+      opts.crossDomain = true
+      opts.headers = HE.util.parseHeaders @$reqHeaders.val()
+
+      jqXHR = $.ajax(opts).always(->
+        self.$reqAddressBar.show()
+        unless jqXHR and jqXHR.status isnt 0
+          window.alert 'no can do.'
+          return
+        self.event.trigger 'res',
+          HE: self
+          jqXHR: jqXHR
+          status: jqXHR.status
+          statusText: jqXHR.statusText
+          headers: HE.util.parseHeaders jqXHR.getAllResponseHeaders()
+          body: jqXHR.responseText
       )
 
   HE.Models = {}
   HE.Views = {}
   HE.util = {}
-  HE.currentDocument = {}
-  HE.jsonIndent = 2
 
 
   # AddressBar -----------------------------------------------------------------
@@ -74,7 +113,56 @@
       self = this
       @HE = opts.HE
       @HE.event.bind 'req-address-change', (e) ->
-        self.HE.$reqAddress.attr 'value', e.url
+        self.HE.$reqAddress.val e.url
+
+    events:
+      'keypress #req-address': 'go'
+
+    go: (e) ->
+      e.stopPropagation()
+      return  if e.keyCode and e.keyCode isnt 13
+      window.location.hash = @HE.$reqAddress.val()
+  )
+
+
+  # Resource -------------------------------------------------------------------
+  HE.Views.Resource = Backbone.View.extend(
+    initialize: (opts) ->
+      self = this
+      @HE = opts.HE
+      _.bindAll @, 'render'
+      _.bindAll @, 'followLink'
+      _.bindAll @, 'showDocs'
+      @HE.event.bind 'res', @render
+
+    events:
+      'click .links-buttons button': 'followLink'
+      'click .links-docs button': 'showDocs'
+
+    render: (e) ->
+      self = @
+      @$el.html @template(
+        state: self.HE.callbacks.parseResBodyState e
+        links: self.HE.callbacks.parseResLinks e
+      )
+
+    followLink: (e) ->
+      e.stopPropagation()
+      $this = $(e.target)
+      uri = $this.attr 'data-href'
+      method = $this.attr 'title'
+      @HE.$reqMethod.find('button').removeClass 'active'
+      @HE.$reqMethod.find('button[title=' + method + ']').addClass 'active'
+      window.location.hash = uri
+
+    showDocs: (e) ->
+      e.stopPropagation()
+      $this = $(e.target)
+      uri = $this.attr 'href'
+      @HE.event.trigger 'show-docs',
+        url: uri
+
+    template: _.template($('#resource-template').html())
   )
 
 
@@ -83,314 +171,35 @@
     initialize: (opts) ->
       self = this
       @HE = opts.HE
-      @addressBar = new HE.Views.AddressBar(
-        el: @HE.$reqAddressBar
-        HE: @HE
-      )
-      @resourceView = new HE.Views.Resource(
-        el: @HE.$resResource
-        HE: @HE
-      )
   )
 
-
-  # Resource ---------------------------------------------------------------------
-  HE.Models.Resource = Backbone.Model.extend(
-    initialize: (representation) ->
-      @links = representation._links
-      @embeddedResources = @buildEmbeddedResources(representation._embedded)  if representation._embedded isnt `undefined`
-      @set representation
-      @unset '_embedded',
-        silent: true
-
-      @unset '_links',
-        silent: true
-
-
-    buildEmbeddedResources: (embeddedResources) ->
-      result = {}
-      _.each embeddedResources, (obj, rel) ->
-        if $.isArray(obj)
-          arr = []
-          _.each obj, (resource, i) ->
-            newResource = new HE.Models.Resource(resource)
-            newResource.identifier = rel + '[' + i + ']'
-            newResource.embed_rel = rel
-            arr.push newResource
-
-          result[rel] = arr
-        else
-          newResource = new HE.Models.Resource(obj)
-          newResource.identifier = rel
-          newResource.embed_rel = rel
-          result[rel] = newResource
-
-      result
-  )
-  HE.Views.Resource = Backbone.View.extend(
-    initialize: (opts) ->
-      self = this
-      @HE = opts.HE
-      _.bindAll this, 'followLink'
-      _.bindAll this, 'showNonSafeRequestDialog'
-      _.bindAll this, 'showUriQueryDialog'
-      _.bindAll this, 'showDocs'
-      @HE.event.bind 'res', (e) ->
-        self.render new HE.Models.Resource(e.resource)
-
-      @HE.event.bind 'res-fail', (e) ->
-        self.HE.event.trigger 'res',
-          resource: null
-          jqxhr: e.jqxhr
-
-    events:
-      'click .links a.follow': 'followLink'
-      'click .links a.non-get': 'showNonSafeRequestDialog'
-      'click .links a.query': 'showUriQueryDialog'
-      'click .links a.dox': 'showDocs'
-
-    render: (resource) ->
-      @$el.html @template(
-        state: resource.toJSON()
-        links: resource.links
-      )
-      $embres = @$('.embedded-resources')
-      $embres.html @renderEmbeddedResources(resource.embeddedResources)
-      $embres.accordion()
-      this
-
-    followLink: (e) ->
-      e.preventDefault()
-      $target = $(e.target)
-      uri = $target.attr('href') or $target.parent().attr('href')
-      window.location.hash = uri
-
-    showUriQueryDialog: (e) ->
-      e.preventDefault()
-      $target = $(e.target)
-      uri = $target.attr('href') or $target.parent().attr('href')
-      d = new HE.Views.QueryUriDialog(href: uri).render()
-      d.$el.dialog
-        title: 'Query URI Template'
-        width: 400
-
-      window.foo = d
-
-    showNonSafeRequestDialog: (e) ->
-      e.preventDefault()
-      d = new HE.Views.NonSafeRequestDialog(
-        href: $(e.target).attr('href')
-        HE: @HE
-      ).render()
-      d.$el.dialog
-        title: 'Non Safe Request'
-        width: 500
-
-    showDocs: (e) ->
-      e.preventDefault()
-      $target = $(e.target)
-      uri = $target.attr('href') or $target.parent().attr('href')
-      @HE.event.trigger 'show-docs',
-        url: uri
-
-    renderEmbeddedResources: (embeddedResources) ->
-      self = this
-      result = ''
-      _.each embeddedResources, (obj) ->
-        if $.isArray(obj)
-          _.each obj, (resource) ->
-            result += self.embeddedResourceTemplate(
-              state: resource.toJSON()
-              links: resource.links
-              name: resource.identifier
-              embed_rel: resource.embed_rel
-            )
-
-        else
-          result += self.embeddedResourceTemplate(
-            state: obj.toJSON()
-            links: obj.links
-            name: obj.identifier
-            embed_rel: obj.embed_rel
-          )
-
-      result
-
-    template: _.template($('#resource-template').html())
-    embeddedResourceTemplate: _.template($('#embedded-resource-template').html())
-  )
 
   # Response -------------------------------------------------------------------
   HE.Views.Response = Backbone.View.extend(
     initialize: (opts) ->
       @HE = opts.HE
-      _.bindAll this, 'showDocs'
-      _.bindAll this, 'showRawResource'
-      _.bindAll this, 'showResponseHeaders'
-      @HE.event.bind 'show-docs', @showDocs
-      @HE.event.bind 'res', @showRawResource
-      @HE.event.bind 'res-headers', @showResponseHeaders
+      _.bindAll @, 'showRes'
+      @HE.event.bind 'res', @showRes
 
-    showResponseHeaders: (e) ->
-      @$('#res-headers').html e.jqxhr.status + ' ' + e.jqxhr.statusText + '\n' + e.jqxhr.getAllResponseHeaders()
-
-    showDocs: (e) ->
-      @$('#res-body').html '<iframe src=' + e.url + '></iframe>'
-
-    showRawResource: (e) ->
-      output = 'n/a'
-      if e.resource isnt null
-        output = JSON.stringify(e.resource, null, HE.jsonIndent)
-      else
-
-        # The Ajax request 'failed', but there may still be an
-        # interesting response body (possibly JSON) to show.
-        content_type = e.jqxhr.getResponseHeader('content-type')
-        responseText = e.jqxhr.responseText
-        unless content_type.indexOf('json') is -1
-
-          # Looks like json... try to parse it.
-          try
-            obj = JSON.parse(responseText)
-            output = JSON.stringify(obj, null, HE.jsonIndent)
-          catch err
-
-            # JSON parse failed. Just show the raw text.
-            output = responseText
-        else output = responseText  if content_type.indexOf('text/') is 0
-      @$('#res-body').html _.escape(output)
+    showRes: (e) ->
+      @HE.$resHeaders.html @HE.callbacks.parseResHeaders e
+      output = @HE.callbacks.prettifyResBody(e) or ''
+      @HE.$resBody.html _.escape output
   )
-  HE.Views.QueryUriDialog = Backbone.View.extend(
-    initialize: (opts) ->
-      @href = opts.href
-      @uriTemplate = uritemplate(@href)
-      _.bindAll this, 'submitQuery'
-      _.bindAll this, 'renderPreview'
 
-    events:
-      'submit form': 'submitQuery'
-      'keyup textarea': 'renderPreview'
-      'change textarea': 'renderPreview'
 
-    submitQuery: (e) ->
-      e.preventDefault()
-      input = undefined
-      try
-        input = JSON.parse(@$('textarea').val())
-      catch err
-        input = {}
-      @$el.dialog 'close'
-      window.location.hash = @uriTemplate.expand(input)
 
-    renderPreview: (e) ->
-      input = undefined
-      result = undefined
-      try
-        input = JSON.parse($(e.target).val())
-        result = @uriTemplate.expand(input)
-      catch err
-        result = 'Invalid json input'
-      @$('.preview').html result
 
-    render: ->
-      @$el.html @template(href: @href)
-      @$('textarea').trigger 'keyup'
-      this
+  # Misc -------------------------------------------------------------------
 
-    template: _.template($('#query-uri-template').html())
-  )
-  HE.Views.NonSafeRequestDialog = Backbone.View.extend(
-    initialize: (opts) ->
-      @href = opts.href
-      @HE = opts.HE
-      @uriTemplate = uritemplate(@href)
-      _.bindAll this, 'submitQuery'
-
-    events:
-      'submit form': 'submitQuery'
-
-    headers: ->
-      HE.util.parseHeaders @$('.headers').val()
-
-    submitQuery: (e) ->
-      e.preventDefault()
-      self = this
-      headers = @headers()
-      method = @$('.method').val()
-      body = @$('.body').val()
-      jqxhr = $.ajax(
-        url: @href
-        dataType: 'json'
-        type: method
-        headers: headers
-        data: body
-      ).done((response) ->
-        self.HE.event.trigger 'res',
-          resource: response
-
-      ).fail((response) ->
-        self.HE.event.trigger 'res-fail',
-          jqxhr: jqxhr
-
-      ).always(->
-        self.HE.event.trigger 'res-headers',
-          jqxhr: jqxhr
-
-        self.HE.event.trigger 'req-address-change',
-          url: self.href
-
-        window.location.hash = 'NON-GET:' + self.href
-      )
-      @$el.dialog 'close'
-
-    render: ->
-      @$el.html @template(
-        href: @href
-        user_defined_headers: $('#req-headers').val()
-      )
-      this
-
-    template: _.template($('#non-safe-request-template').html())
-  )
-  urlRegex = /(http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/
-  HE.isUrl = (str) ->
-    str.match(urlRegex) or isCurie(str)
-
-  HE.truncateIfUrl = (str) ->
-    replaceRegex = /(http|https):\/\/([^\/]*)\//
-    str.replace replaceRegex, '.../'
-
-  isCurie = (string) ->
-    string.split(':').length > 1
-
-  HE.buildUrl = (rel) ->
-    if not rel.match(urlRegex) and isCurie(rel) and HE.currentDocument._links.curies
-      parts = rel.split(':')
-      curies = HE.currentDocument._links.curies
-      i = 0
-
-      while i < curies.length
-        if curies[i].name is parts[0]
-          tmpl = uritemplate(curies[i].href)
-          return tmpl.expand(rel: parts[1])
-        i++
-
-    # Backward compatible with <04 version of spec.
-    else if not rel.match(urlRegex) and isCurie(rel) and HE.currentDocument._links.curie
-      tmpl = uritemplate(HE.currentDocument._links.curie.href)
-      tmpl.expand rel: rel.split(':')[1]
-
-    # End BC.
-    else
-      rel
-
+  # Util -------------------------------------------------------------------
   HE.util.parseHeaders = (string) ->
     header_lines = string.split('\n')
     headers = {}
     _.each header_lines, (line) ->
       parts = line.split(':')
       if parts.length > 1
-        name = parts.shift().trim()
+        name = parts.shift().trim().toLowerCase()
         value = parts.join(':').trim()
         headers[name] = value
 

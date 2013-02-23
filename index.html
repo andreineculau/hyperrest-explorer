@@ -2,8 +2,6 @@
   <head>
     <meta charset="utf-8">
     <title>Hypermedia Explorer</title>
-    <link rel="stylesheet" media="screen" href="//ajax.aspnetcdn.com/ajax/jquery.ui/1.8.19/themes/base/jquery-ui.css" />
-    <link rel="stylesheet" media="screen" href="//ajax.aspnetcdn.com/ajax/jquery.ui/1.8.19/themes/ui-lightness/jquery-ui.css" />
     <link rel="stylesheet" media="screen" href="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.3.0/css/bootstrap.min.css" />
     <link rel="stylesheet" media="screen" href="styles.css" />
   </head>
@@ -17,18 +15,18 @@
             <ul class="nav" id="req-address-bar">
               <li>
                 <form class="navbar-form pull-left">
-                  <div class="btn-group" data-toggle="buttons-radio">
-                    <button class="btn btn-info"><abbr title="OPTIONS">O</abbr></button>
-                    <button class="btn btn-info"><abbr title="HEAD">H</abbr></button>
-                    <button class="btn btn-danger"><abbr title="POST">PO</abbr></button>
-                    <button class="btn btn-success active"><abbr title="GET">G</abbr></button>
-                    <button class="btn btn-danger"><abbr title="PATCH">PA</abbr></button>
-                    <button class="btn btn-warning"><abbr title="PUT">PU</abbr></button>
-                    <button class="btn btn-warning"><abbr title="DELETE">D</abbr></button>
-                    <button class="btn btn-info"><abbr title="TRACE">T</abbr></button>
+                  <div class="btn-group" data-toggle="buttons-radio" id="req-method">
+                    <button type="button" class="btn btn-info" title="OPTIONS">O</button>
+                    <button type="button" class="btn btn-info" title="HEAD">H</button>
+                    <button type="button" class="btn btn-success active" title="GET">G</button>
+                    <button type="button" class="btn btn-danger" title="POST">PO</button>
+                    <button type="button" class="btn btn-danger" title="PATCH">PA</button>
+                    <button type="button" class="btn btn-warning" title="PUT">PU</button>
+                    <button type="button" class="btn btn-warning" title="DELETE">D</button>
                   </div>
-                  <input type="text" id="req-address" class="input-block-level"></input>
-                  <button id="req-refresh" class="btn btn-inverse">⟳</button>
+                  <input type="text" class="pre input-block-level" id="req-address"></input>
+                  <button type="button" class="btn btn-inverse" id="req-refresh"><i class="icon-refresh icon-white"></i></button>
+                  </div>
                 </form>
               </li>
             </ul>
@@ -36,7 +34,6 @@
         </div>
       </div>
     </div>
-
 
     <div class="container-fluid">
       <div class="row-fluid" id="main">
@@ -50,11 +47,11 @@
             <h1>Request</h1>
             <h2>Headers</h2>
             <div id="req-headers-bar">
-              <textarea id="req-headers" class="input-block-level pre pre-scrollable-small"></textarea>
+              <textarea id="req-headers" class="input-block-level pre scrollable-small"></textarea>
             </div>
             <h2>Body</h2>
             <div id="req-body-bar">
-              <textarea id="req-body" class="input-block-level pre pre-scrollable"></textarea>
+              <textarea id="req-body" class="input-block-level pre scrollable"></textarea>
             </div>
           </div>
         </div>
@@ -64,11 +61,11 @@
             <h1>Response</h1>
             <h2>Headers</h2>
             <div id="res-headers-bar">
-              <pre id="res-headers" class="pre-scrollable-small"></pre>
+              <pre id="res-headers" class="scrollable-small"></pre>
             </div>
             <h2>Body</h2>
             <div id="res-body-bar">
-              <pre id="res-body" class="pre-scrollable"></pre>
+              <pre id="res-body" class="scrollable"></pre>
             </div>
           </div>
         </div>
@@ -109,161 +106,56 @@
     </script>
 
     <script id="resource-template" type="text/template">
-      <div class="links">
-        <h2>Links</h2>
+      <% if (links && links.length) { %>
+        <div class="links">
+          <h2>Links</h2>
           <table class="table">
             <thead>
               <tr>
                 <th>rel</th>
                 <th>title</th>
-                <th>name / index</th>
+                <th>props</th>
                 <th>docs</th>
-                <th>GET</th>
-                <th>NON-GET</th>
+                <th>operations</th>
               </tr>
             </thead>
             <tbody>
-            <% _.each(links, function(obj, rel) { %>
-              <% if ($.isArray(obj)) { %>
-                <% _.each(obj, function(link, i) { %>
-                  <tr>
-                    <td><strong><%= HE.truncateIfUrl(rel) %></strong></td>
-                    <td><%= link.title || '' %></td>
-                    <td><%= link.name ? 'name: ' + link.name : 'index: ' + i %></a></td>
-                    <td>
-                    <% if (HE.isUrl(rel)) { %>
-                      <a class="dox" href="<%= HE.buildUrl(rel) %>"><i class="icon-book"></i></a>
-                    <% } %>
-                    </td>
-                    <td>
-                      <% if (link.templated === true) { %>
-                        <a class="query btn btn-success" href="<%= link.href %>" title="Query URI template"><i class="icon-question-sign"></i></a>
-                      <% } else { %>
-                        <a class="follow btn btn-success" href="<%= link.href %>" title="Follow link"><i class="icon-arrow-right"></i></a>
-                      <% } %>
-                    </td>
-                    <td>
-                      <a class="non-get btn btn-warning" href="<%= link.href %>" title="Perform non-GET request">!</a>
-                    </td>
-                  </tr>
-                <% }); %>
-              <% } else { %>
+              <% _.each(links, function(link) { %>
                 <tr>
-                  <td><strong><%= HE.truncateIfUrl(rel) %></strong></td>
-                  <td><%= obj.title || '' %></td>
-                  <td><%= obj.name || '' %></td>
-                  <td>
-                  <% if (HE.isUrl(rel)) { %>
-                    <a class="dox" href="<%= HE.buildUrl(rel) %>"><i class="icon-book"></i></a>
-                  <% } %>
-                  </td>
-                  <td>
-                    <% if (obj.templated === true) { %>
-                      <a class="query btn btn-success" href="<%= obj.href %>" title="Query URI template"><i class="icon-question-sign"></i></a>
-                    <% } else { %>
-                      <a class="follow btn btn-success" href="<%= obj.href %>" title="Follow link"><i class="icon-arrow-right"></i></a>
+                  <td><strong><%= link.relShort %></strong></td>
+                  <td><%= link.title || '' %></td>
+                  <td title="<%= link.props %>"><%= link.name || link.index || '...' %></td>
+                  <td class="links-docs">
+                    <% if (link.relURI) { %>
+                      <a href="<%= link.relURI %>"><i class="icon-book"></i></a>
                     <% } %>
                   </td>
-                  <td>
-                    <a class="non-get btn btn-warning" href="<%= obj.href %>" title="Perform non-GET request">!</a>
+                  <td class="links-buttons">
+                    <div class="btn-group">
+                      <button type="button" class="btn btn-info" title="OPTIONS" data-href="<%= link.href %>">O</button>
+                      <button type="button" class="btn btn-info" title="HEAD" data-href="<%= link.href %>">H</button>
+                      <button type="button" class="btn btn-success" title="GET" data-href="<%= link.href %>">G</button>
+                      <button type="button" class="btn btn-danger" title="POST" data-href="<%= link.href %>">PO</button>
+                      <button type="button" class="btn btn-danger" title="PATCH" data-href="<%= link.href %>">PA</button>
+                      <button type="button" class="btn btn-warning" title="PUT" data-href="<%= link.href %>">PU</button>
+                      <button type="button" class="btn btn-warning" title="DELETE" data-href="<%= link.href %>">D</button>
+                    </div>
                   </td>
                 </tr>
-              <% } %>
-            <% }) %>
+              <% }); %>
             </tbody>
           </table>
-      </div>
+        </div>
+      <% } %>
       <div class="state">
         <h2>State</h2>
-        <pre><%= _.escape(JSON.stringify(state, null, HE.jsonIndent)) %></pre>
-      </div>
-      <h2>Embedded Resources</h2>
-      <div class="embedded-resources"></div>
-    </script>
-
-    <script id="embedded-resource-template" type="text/template">
-      <h3><a href="#"><%= name %></a></h3>
-      <div class="clearfix">
-        <div class="state">
-            <h4>State
-            <% if (HE.isUrl(embed_rel)) { %>
-                <a class="dox" href="<%= HE.buildUrl(embed_rel) %>">
-                    <i class="icon-book"></i></a>
-            <% } %>
-            </h4>
-          <pre><%= _.escape(JSON.stringify(state, null, HE.jsonIndent)) %></pre>
-        </div>
-        <div class="links">
-          <h4>Links</h4>
-          <table class="table">
-            <thead>
-              <tr>
-                <th>rel</th>
-                <th>title</th>
-                <th>name / index</th>
-                <th>docs</th>
-                <th>GET</th>
-                <th>NON-GET</th>
-              </tr>
-            </thead>
-            <tbody>
-            <% _.each(links, function(obj, rel) { %>
-              <% if ($.isArray(obj)) { %>
-                <% _.each(obj, function(link, i) { %>
-                  <tr>
-                    <td><strong><%= HE.truncateIfUrl(rel) %></strong></td>
-                    <td><%= link.title || '' %></td>
-                    <td><%= link.name ? 'name: ' + link.name : 'index: ' + i %></a></td>
-                    <td>
-                    <% if (HE.isUrl(rel)) { %>
-                      <a class="dox" href="<%= HE.buildUrl(rel) %>"><i class="icon-book"></i></a>
-                    <% } %>
-                    </td>
-                    <td>
-                      <% if (link.templated === true) { %>
-                        <a class="query btn btn-success" href="<%= link.href %>" title="Query URI template"><i class="icon-question-sign"></i></a>
-                      <% } else { %>
-                        <a class="follow btn btn-success" href="<%= link.href %>" title="Follow link"><i class="icon-arrow-right"></i></a>
-                      <% } %>
-                    </td>
-                    <td>
-                      <a class="non-get btn btn-warning" href="<%= link.href %>" title="Perform non-GET request">!</a>
-                    </td>
-                  </tr>
-                <% }); %>
-              <% } else { %>
-                <tr>
-                  <td><strong><%= HE.truncateIfUrl(rel) %></strong></td>
-                  <td><%= obj.title || '' %></td>
-                  <td><%= obj.name || '' %></td>
-                  <td>
-                  <% if (HE.isUrl(rel)) { %>
-                    <a class="dox" href="<%= HE.buildUrl(rel) %>"><i class="icon-book"></i></a>
-                  <% } %>
-                  </td>
-                  <td>
-                    <% if (obj.templated === true) { %>
-                      <a class="query btn btn-success" href="<%= obj.href %>" title="Query URI template"><i class="icon-question-sign"></i></a>
-                    <% } else { %>
-                      <a class="follow btn btn-success" href="<%= obj.href %>" title="Follow link"><i class="icon-arrow-right"></i></a>
-                    <% } %>
-                  </td>
-                  <td>
-                    <a class="non-get btn btn-warning" href="<%= obj.href %>" title="Perform non-GET request">!</a>
-                  </td>
-                </tr>
-              <% } %>
-            <% }) %>
-            </tbody>
-          </table>
-        </div>
+        <pre><%= _.escape(JSON.stringify(state, null, 2)) %></pre>
       </div>
     </script>
 
     <!-- SCRIPTS -->
     <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
-    <script src="//cdnjs.cloudflare.com/ajax/libs/jqueryui/1.10.0/jquery-ui.min.js"></script>
-    <script src="//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.4.4/underscore-min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/lodash.js/1.0.1/lodash.min.js"></script>
     <script src="//cdnjs.cloudflare.com/ajax/libs/backbone.js/0.9.10/backbone-min.js"></script>
     <script src="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.3.0/js/bootstrap.min.js"></script>
     <script src="//cdnjs.cloudflare.com/ajax/libs/coffee-script/1.4.0/coffee-script.min.js"></script>
