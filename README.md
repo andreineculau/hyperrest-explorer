@@ -1,6 +1,6 @@
-# Hypermedia Explorer
+# HyperREST Explorer
 
-A Hypermedia Explorer for Hypermedia APIs.
+A HyperREST Explorer for [HyperREST](http://andreineculau.github.com/hyperrest/) APIs.
 
 This is an abstract fork of [HAL Browser](https://github.com/mikekelly/hal-browser).
 
